@@ -1,11 +1,7 @@
-﻿using System.Diagnostics;
-using System.Net;
+﻿using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using MyFinance.Models;
-using System.Security.Claims;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using System.Net.Http.Headers;
 
@@ -34,67 +30,13 @@ public class AccountsController : Controller
         return client;
     }
 
-    [HttpGet]
-    public IActionResult Login(string? returnUrl = null)
-        => View(new LoginViewModel { ReturnUrl = returnUrl });
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel vm)
-    {
-        if (!ModelState.IsValid) return View(vm);
-
-        try
-        {
-            var client = await CreateClientWithToken();
-            var resp = await client.PostAsJsonAsync("auth/login", vm);
-            if (!resp.IsSuccessStatusCode)
-            {
-                ModelState.AddModelError("", "Usuário ou senha inválidos.");
-                return View(vm);
-            }
-
-            var json = await resp.Content.ReadAsStringAsync();
-            var obj = JsonSerializer.Deserialize<JsonElement>(json);
-            var token = obj.GetProperty("token").GetString() ?? "";
-
-            // Criar claims e cookie de autenticação
-            var claims = new[] { new Claim(ClaimTypes.Name, vm.Username ?? string.Empty) };
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-            var authProps = new AuthenticationProperties { IsPersistent = false };
-            authProps.StoreTokens(new[] { new AuthenticationToken
-            {
-                Name = "access_token",
-                Value = token
-            }});
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProps);
-            return vm.ReturnUrl != null ? Redirect(vm.ReturnUrl) : RedirectToAction("Index", "Accounts");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro no login");
-            ModelState.AddModelError("", "Erro de comunicação. Tente novamente.");
-            return View(vm);
-        }
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult Logout()
-    {
-        HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return RedirectToAction("Login");
-    }
-
     // GET: Accounts
     public async Task<IActionResult> Index()
     {
         try
         {
             var client = await CreateClientWithToken();
-            var response = await client.GetAsync("accounts");
+            var response = await client.GetAsync("/api/Account");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -109,7 +51,8 @@ public class AccountsController : Controller
             {
                 a.DataExecucao = DateTime.Now;
                 return a;
-            }).ToList();
+            }).ToList()
+            .OrderBy(x => x.Name); // ordena lista de retorno
 
             return View(accountsWithDate);
         }
@@ -124,14 +67,12 @@ public class AccountsController : Controller
     public async Task<IActionResult> Details(int? id)
     {
         if (id == null)
-        {
             return NotFound();
-        }
 
         try
         {
             var client = await CreateClientWithToken();
-            var response = await client.GetAsync($"accounts/{id}");
+            var response = await client.GetAsync($"/api/Account/{id}");
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -161,14 +102,12 @@ public class AccountsController : Controller
     public async Task<IActionResult> Create([Bind("Id,Name,Balance")] AccountViewModel account)
     {
         if (!ModelState.IsValid)
-        {
             return View(account);
-        }
 
         try
         {
             var client = await CreateClientWithToken();
-            var response = await client.PostAsJsonAsync("accounts", account);
+            var response = await client.PostAsJsonAsync("/api/Account", account);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -189,14 +128,12 @@ public class AccountsController : Controller
     public async Task<IActionResult> Edit(int? id)
     {
         if (id == null)
-        {
             return NotFound();
-        }
 
         try
         {
             var client = await CreateClientWithToken();
-            var response = await client.GetAsync($"accounts/{id}");
+            var response = await client.GetAsync($"/api/Account/{id}");
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -223,19 +160,15 @@ public class AccountsController : Controller
     public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Balance")] AccountViewModel account)
     {
         if (id != account.Id)
-        {
             return NotFound();
-        }
 
         if (!ModelState.IsValid)
-        {
             return View(account);
-        }
 
         try
         {
             var client = await CreateClientWithToken();
-            var response = await client.PutAsJsonAsync($"accounts/{id}", account);
+            var response = await client.PutAsJsonAsync($"/api/Account/{id}", account);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -259,14 +192,12 @@ public class AccountsController : Controller
     public async Task<IActionResult> Delete(int? id)
     {
         if (id == null)
-        {
             return NotFound();
-        }
 
         try
         {
             var client = await CreateClientWithToken();
-            var response = await client.GetAsync($"accounts/{id}");;
+            var response = await client.GetAsync($"/api/Account/{id}"); ;
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -295,10 +226,13 @@ public class AccountsController : Controller
         try
         {
             var client = await CreateClientWithToken();
-            var response = await client.DeleteAsync($"accounts/{id}");
+            var response = await client.DeleteAsync($"/api/Account/{id}");
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+                return RedirectToAction("Error", "Home", new { message = "Permissão negada para operação." });
 
             if (!response.IsSuccessStatusCode)
             {

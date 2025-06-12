@@ -1,5 +1,8 @@
 ﻿@model MyFinance.Models.LoginViewModel
 
+@* Mostra mensagens de erro gerais do ModelState *@
+@Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
 <form asp-action="Login" method="post">
     <input asp-for="Username" placeholder="Usuário" />
     <span asp-validation-for="Username"></span>
