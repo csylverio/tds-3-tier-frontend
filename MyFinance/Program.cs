@@ -1,5 +1,6 @@
 
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,13 @@ builder.Services.AddHttpClient("FinanceApi", client =>
     client.DefaultRequestHeaders.Accept.Add(
         new MediaTypeWithQualityHeaderValue("application/json"));
 });
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 

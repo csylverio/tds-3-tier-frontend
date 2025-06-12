@@ -1,0 +1,17 @@
+﻿@model MyFinance.Models.LoginViewModel
+
+<form asp-action="Login" method="post">
+    <input asp-for="Username" placeholder="Usuário" />
+    <span asp-validation-for="Username"></span>
+
+    <input asp-for="Password" placeholder="Senha" type="password" />
+    <span asp-validation-for="Password"></span>
+
+    <input type="hidden" asp-for="ReturnUrl" />
+
+    <button type="submit">Entrar</button>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
