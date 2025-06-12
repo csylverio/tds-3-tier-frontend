@@ -28,16 +28,16 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Accounts" asp-action="Index">Account</a>
                         </li>
-                        <li>
-                           <!-- BOTÃO DE LOGOUT -->
+                        <li class="nav-item ms-auto d-flex align-items-center">
                             @if (User.Identity?.IsAuthenticated ?? false)
                             {
+                                <span class="me-2">Olá, @User.Identity.Name!</span>
                                 <form asp-controller="Account"
                                     asp-action="Logout"
                                     method="post"
                                     class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-secondary">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
                                         Logout
                                     </button>
                                 </form>
@@ -46,12 +46,12 @@
                     </ul>
                 </div>
             </div>
+            
         </nav>
     </header>
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
-
         </main>
     </div>
 
