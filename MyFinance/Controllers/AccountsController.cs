@@ -1,33 +1,21 @@
 ﻿using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using MyFinance.Models;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using System.Net.Http.Headers;
+using MyFinance.Services;
 
 namespace MyFinance.Controllers;
 
 [Authorize]
 public class AccountsController : Controller
 {
-    private readonly IHttpClientFactory _httpFactory;
+    private readonly IFinanceApiClient _financeApiClient;
     private readonly ILogger<AccountsController> _logger;
 
-    public AccountsController(IHttpClientFactory httpFactory, ILogger<AccountsController> logger)
+    public AccountsController(IFinanceApiClient financeApiClient, ILogger<AccountsController> logger)
     {
-        _httpFactory = httpFactory;
+        _financeApiClient = financeApiClient;
         _logger = logger;
-    }
-
-    private async Task<HttpClient> CreateClientWithToken()
-    {
-        var client = _httpFactory.CreateClient("FinanceApi");
-        var token = await HttpContext.GetTokenAsync("access_token");
-
-        if (!string.IsNullOrEmpty(token))
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        return client;
     }
 
     // GET: Accounts
@@ -35,8 +23,7 @@ public class AccountsController : Controller
     {
         try
         {
-            var client = await CreateClientWithToken();
-            var response = await client.GetAsync("/api/Account");
+            var response = await _financeApiClient.GetAccountsAsync();
 
             if (!response.IsSuccessStatusCode)
             {
@@ -44,15 +31,13 @@ public class AccountsController : Controller
                 return RedirectToAction("Error", "Home", new { message = "Erro ao obter contas." });
             }
 
-            var accounts = await response.Content.ReadFromJsonAsync<List<AccountViewModel>>();
-
-            // Adiciona DataExecucao para cada conta
-            var accountsWithDate = accounts?.Select(a =>
+            var accounts = response.Value ?? Array.Empty<AccountViewModel>();
+            var accountsWithDate = accounts.Select(a =>
             {
-                a.DataExecucao = DateTime.Now;
+                a.DataExecucao = DateTimeOffset.UtcNow;
                 return a;
             }).ToList()
-            .OrderBy(x => x.Name); // ordena lista de retorno
+            .OrderBy(x => x.Name);
 
             return View(accountsWithDate);
         }
@@ -71,8 +56,7 @@ public class AccountsController : Controller
 
         try
         {
-            var client = await CreateClientWithToken();
-            var response = await client.GetAsync($"/api/Account/{id}");
+            var response = await _financeApiClient.GetAccountAsync(id.Value);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -83,8 +67,10 @@ public class AccountsController : Controller
                 return RedirectToAction("Error", "Home", new { message = "Erro ao obter detalhes da conta." });
             }
 
-            var account = await response.Content.ReadFromJsonAsync<AccountViewModel>();
-            return View(account);
+            if (response.Value is null)
+                return RedirectToAction("Error", "Home", new { message = "Conta não encontrada." });
+
+            return View(response.Value);
         }
         catch (Exception ex)
         {
@@ -106,8 +92,7 @@ public class AccountsController : Controller
 
         try
         {
-            var client = await CreateClientWithToken();
-            var response = await client.PostAsJsonAsync("/api/Account", account);
+            var response = await _financeApiClient.CreateAccountAsync(account);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -132,8 +117,7 @@ public class AccountsController : Controller
 
         try
         {
-            var client = await CreateClientWithToken();
-            var response = await client.GetAsync($"/api/Account/{id}");
+            var response = await _financeApiClient.GetAccountAsync(id.Value);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -144,8 +128,10 @@ public class AccountsController : Controller
                 return RedirectToAction("Error", "Home", new { message = "Erro ao obter contas." });
             }
 
-            var account = await response.Content.ReadFromJsonAsync<AccountViewModel>();
-            return View(account);
+            if (response.Value is null)
+                return RedirectToAction("Error", "Home", new { message = "Conta não encontrada." });
+
+            return View(response.Value);
         }
         catch (Exception ex)
         {
@@ -167,8 +153,7 @@ public class AccountsController : Controller
 
         try
         {
-            var client = await CreateClientWithToken();
-            var response = await client.PutAsJsonAsync($"/api/Account/{id}", account);
+            var response = await _financeApiClient.UpdateAccountAsync(id, account);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -196,8 +181,7 @@ public class AccountsController : Controller
 
         try
         {
-            var client = await CreateClientWithToken();
-            var response = await client.GetAsync($"/api/Account/{id}"); ;
+            var response = await _financeApiClient.GetAccountAsync(id.Value);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();
@@ -208,8 +192,10 @@ public class AccountsController : Controller
                 return RedirectToAction("Error", "Home", new { message = "Erro ao obter contas." });
             }
 
-            var account = await response.Content.ReadFromJsonAsync<AccountViewModel>();
-            return View(account);
+            if (response.Value is null)
+                return RedirectToAction("Error", "Home", new { message = "Conta não encontrada." });
+
+            return View(response.Value);
         }
         catch (Exception ex)
         {
@@ -225,8 +211,7 @@ public class AccountsController : Controller
     {
         try
         {
-            var client = await CreateClientWithToken();
-            var response = await client.DeleteAsync($"/api/Account/{id}");
+            var response = await _financeApiClient.DeleteAccountAsync(id);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return NotFound();

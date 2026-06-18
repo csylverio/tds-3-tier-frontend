@@ -16,9 +16,6 @@
   <component name="ChangeListManager">
     <list default="true" id="520dc3ab-2a7c-4c8e-aa03-aed6988acf27" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.MyFinance/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.MyFinance/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MyFinance/MyFinance.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/MyFinance/MyFinance.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MyFinance/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/MyFinance/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MyFinance/appsettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/MyFinance/appsettings.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,7 +104,7 @@
       <workItem from="1764368910854" duration="2916000" />
       <workItem from="1781126237226" duration="311000" />
       <workItem from="1781729018655" duration="4609000" />
-      <workItem from="1781739392794" duration="499000" />
+      <workItem from="1781739392794" duration="1633000" />
     </task>
     <servers />
   </component>

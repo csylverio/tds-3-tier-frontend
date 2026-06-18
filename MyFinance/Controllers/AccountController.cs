@@ -2,19 +2,19 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using MyFinance.Models;
+using MyFinance.Services;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace MyFinance.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly IHttpClientFactory _httpFactory;
+    private readonly IFinanceApiClient _financeApiClient;
     private readonly ILogger<AccountController> _logger;
 
-    public AccountController(IHttpClientFactory httpFactory, ILogger<AccountController> logger)
+    public AccountController(IFinanceApiClient financeApiClient, ILogger<AccountController> logger)
     {
-        _httpFactory = httpFactory;
+        _financeApiClient = financeApiClient;
         _logger = logger;
     }
 
@@ -30,18 +30,9 @@ public class AccountController : Controller
 
         try
         {
-            var client = _httpFactory.CreateClient("FinanceApi");
-            var resp = await client.PostAsJsonAsync("api/Token", vm);
+            var response = await _financeApiClient.AuthenticateAsync(vm);
 
-            if (!resp.IsSuccessStatusCode)
-            {
-                ModelState.AddModelError("", "Usuário ou senha inválidos.");
-                return View(vm);
-            }
-
-            var json = await resp.Content.ReadAsStringAsync();
-            var token = JsonSerializer.Deserialize<string>(json) ?? "";
-            if (string.IsNullOrWhiteSpace(token))
+            if (!response.IsSuccessStatusCode || string.IsNullOrWhiteSpace(response.Value))
             {
                 ModelState.AddModelError("", "Usuário ou senha inválidos.");
                 return View(vm);
@@ -55,11 +46,15 @@ public class AccountController : Controller
             authProps.StoreTokens(new[] { new AuthenticationToken
             {
                 Name = "access_token",
-                Value = token
+                Value = response.Value
             }});
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProps);
-            return vm.ReturnUrl != null ? Redirect(vm.ReturnUrl) : RedirectToAction("Index", "Accounts");
+
+            if (!string.IsNullOrWhiteSpace(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
+                return LocalRedirect(vm.ReturnUrl);
+
+            return RedirectToAction("Index", "Accounts");
         }
         catch (Exception ex)
         {
