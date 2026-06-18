@@ -11,7 +11,7 @@ public class AccountViewModel
     [Display(Name = "Nome")]
     public string Name { get; set; } = string.Empty;
 
-    [Range(typeof(decimal), "0", "999999999999.99", ErrorMessage = "O saldo deve ser maior ou igual a zero.")]
+    [Range(typeof(decimal), "0", "999999999999.99", ErrorMessage = "O saldo deve ser maior ou igual a zero.", ParseLimitsInInvariantCulture = true)]
     [DataType(DataType.Currency)]
     [Display(Name = "Saldo")]
     public decimal Balance { get; set; }
